@@ -33,7 +33,9 @@ export const fetchMember = asyncHandler(async (req, res) => {
       .json({ success: false, message: "User already exists" });
   }
 
-  const member = await UniversityMember.findOne({ uniqueId });
+  const member = await UniversityMember.findOne({
+  uniqueId: { $regex: new RegExp(`^${uniqueId}$`, "i") }
+});
   if (!member) {
     return res
       .status(404)
@@ -63,9 +65,9 @@ export const sendOtp = asyncHandler(async (req, res) => {
   }
 
   const { uniqueId, emailForOtp } = req.body;
-  const member = await UniversityMember.findOne({
-    uniqueId: uniqueId.toLowerCase(),
-  });
+ const member = await UniversityMember.findOne({
+  uniqueId: { $regex: `^${uniqueId}$`, $options: "i" },
+});
   if (!member) {
     return res
       .status(404)
@@ -174,7 +176,9 @@ export const saveUserPassword = asyncHandler(async (req, res) => {
   }
 
   const { uniqueId, password } = req.body;
-  const user = await UniversityMember.findOne({ uniqueId });
+  const user = await UniversityMember.findOne({
+  uniqueId: { $regex: `^${uniqueId}$`, $options: "i" },
+});
   if (!user) {
     return res
       .status(404)
@@ -208,6 +212,7 @@ export const saveUserPassword = asyncHandler(async (req, res) => {
 // Login
 // ==========================
 export const login = asyncHandler(async (req, res) => {
+  // 1️⃣ Validate input
   await check("uniqueId", "Unique ID is required").notEmpty().run(req);
   await check("password", "Password is required").notEmpty().run(req);
   const errors = validationResult(req);
@@ -218,22 +223,25 @@ export const login = asyncHandler(async (req, res) => {
   }
 
   const { uniqueId, password } = req.body;
-  const lower = uniqueId.toLowerCase();
+
+  // 2️⃣ Case-insensitive search in all collections
   const user =
-    (await MedicalUser.findOne({ uniqueId: lower })) ||
-    (await UniversityDBAdmin.findOne({ uniqueId: lower })) ||
-    (await MedicalDBAdmin.findOne({ uniqueId: lower }));
+    (await MedicalUser.findOne({ uniqueId: { $regex: `^${uniqueId}$`, $options: "i" } })) ||
+    (await UniversityDBAdmin.findOne({ uniqueId: { $regex: `^${uniqueId}$`, $options: "i" } })) ||
+    (await MedicalDBAdmin.findOne({ uniqueId: { $regex: `^${uniqueId}$`, $options: "i" } }));
 
   if (!user) {
     return res.status(404).json({ success: false, message: "User not found" });
   }
 
+  // 3️⃣ Check if password is set
   if (!user.password) {
     return res
       .status(403)
       .json({ success: false, message: "Set password first" });
   }
 
+  // 4️⃣ Compare password using bcrypt
   const match = await bcrypt.compare(password, user.password);
   if (!match) {
     return res
@@ -241,11 +249,12 @@ export const login = asyncHandler(async (req, res) => {
       .json({ success: false, message: "Invalid password" });
   }
 
+  // 5️⃣ Save user session
   req.session.user = {
     id: user._id.toString(),
     uniqueId: user.uniqueId,
     name: user.name,
-    role: user.role,
+    role: user.role || "user",
   };
 
   req.session.save((err) => {

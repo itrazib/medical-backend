@@ -18,7 +18,7 @@ const router = express.Router();
 router.get("/whoami", async (req, res) => {
   console.log("=== WHOAMI ROUTE HIT ===");
   console.log("Cookies:", req.cookies);
-  console.log("Session:", req.session);
+  console.log("Session:", req.session.user);
   if (req.session && req.session.user) {
     return res.json(req.session.user);
   } else {

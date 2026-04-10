@@ -102,8 +102,9 @@ export const auth_google = [
 // ===== Google Callback =====
 export const auth_google_callback = (req, res, next) => {
   passport.authenticate("google", (err, user) => {
+    console.log("User object:", user);
     if (err) return next(err);
-    if (!user) return res.redirect("/");
+    if (!user) return res.redirect("http://localhost:5173");
 
     req.session.regenerate((err) => {
       if (err) return next(err);
@@ -130,6 +131,8 @@ export const auth_google_callback = (req, res, next) => {
             ? process.env.REDIRECT_URL_GOOGLE_REDIRECT
             : process.env.REDIRECT_URL_SET_PASSWORD;
 
+            console.log("Redirecting to:", redirectUrl);
+
           return res.redirect(redirectUrl);
         });
       });
@@ -144,6 +147,7 @@ export const logout_get = (req, res) => {
 
     res.clearCookie("connect.sid");
     res.status(200).send("Logged out successfully");
+    res.redirect("http://localhost:5173");
   });
 };
 
