@@ -15,9 +15,8 @@ import { calculateAge } from "../helper/prescriptionMethods.js";
 export const getPatientInfo = async (req, res) => {
   try {
     const patient = await MedicalUser.findOne({
-      uniqueId: req.params.uniqueId.toLowerCase(),
-    }).lean();
-
+  uniqueId: { $regex: new RegExp(`^${req.params.uniqueId}$`, "i") }
+}).lean();
     if (!patient)
       return res.status(404).json({ message: "Patient not found" });
 

@@ -154,7 +154,7 @@ router.get("/telemedicine/doctors-today", async (req, res) => {
 
 router.get("/pathology-tests", async (req, res) => {
   try {
-    const tests = await Test.find({ availableInMedicalCenter: false });
+    const tests = await Test.find({ availableInMedicalCenter: true });
     res.json(tests);
   } catch (err) {
     res.status(500).json({ error: "Server error" });

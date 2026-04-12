@@ -110,21 +110,39 @@ const PrescriptionSchema = new mongoose.Schema(
 );
 
 // Automatically compute externalQuantity before saving
-PrescriptionSchema.pre("validate", async function (next) {
-  if (this.isNew && !this.prescriptionNumber) {
-    const counter = await Counter.findByIdAndUpdate(
-      { _id: "prescriptionNumber" },
-      { $inc: { seq: 1 } },
-      { new: true, upsert: true }
-    );
-    const datePart = this.date.toISOString().slice(0, 10).replace(/-/g, "");
-    const seqPart = String(counter.seq).padStart(4, "0");
-    this.prescriptionNumber = `RX-${datePart}-${seqPart}`;
+// PrescriptionSchema.pre("validate", async function (next) {
+//   if (this.isNew && !this.prescriptionNumber) {
+//     const counter = await Counter.findByIdAndUpdate(
+//       { _id: "prescriptionNumber" },
+//       { $inc: { seq: 1 } },
+//       { new: true, upsert: true }
+//     );
+//     const datePart = this.date.toISOString().slice(0, 10).replace(/-/g, "");
+//     const seqPart = String(counter.seq).padStart(4, "0");
+//     this.prescriptionNumber = `RX-${datePart}-${seqPart}`;
+//   }
+//   next();
+// });
+PrescriptionSchema.pre("validate", async function () {
+  try {
+    if (this.isNew && !this.prescriptionNumber) {
+      const counter = await Counter.findByIdAndUpdate(
+        { _id: "prescriptionNumber" },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true }
+      );
+
+      const datePart = this.date.toISOString().slice(0, 10).replace(/-/g, "");
+      const seqPart = String(counter.seq).padStart(4, "0");
+
+      this.prescriptionNumber = `RX-${datePart}-${seqPart}`;
+    }
+  } catch (err) {
+    throw err;
   }
-  next();
 });
 
-const Prescription = mongoose.model("Prescription", PrescriptionSchema);
+export const Prescription = mongoose.model("Prescription", PrescriptionSchema);
 
 export default Prescription;
 

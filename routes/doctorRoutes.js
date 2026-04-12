@@ -68,23 +68,32 @@ router.get("/search-patient", isDoctor, async (req, res) => {
 // Get patient profile
 router.get("/patient-profile/:uniqueId", isDoctor, async (req, res) => {
   const { uniqueId } = req.params;
+
   try {
-    const patient = await MedicalUser.findOne({ uniqueId, role: { $ne: "doctor" } }).lean();
-    if (!patient) return res.status(404).json({ message: "Patient not found" });
+    const patient = await MedicalUser.findOne({
+      uniqueId,
+      role: { $ne: "doctor" },
+    }).lean();
 
-    patient.photoUrl = patient.photo
-      ? await getSignedUrl(
-          s3Client,
-          new GetObjectCommand({
-            Bucket: process.env.AWS_BUCKET_NAME,
-            Key: patient.photo,
-          })
-        )
-      : null;
+    if (!patient) {
+      return res.status(404).json({ message: "Patient not found" });
+    }
 
-    res.json({ success: true, user: patient, message: "Patient profile fetched successfully" });
+    // ✅ DB direct URL use
+    patient.photoUrl = patient.photo || null;
+
+    res.json({
+      success: true,
+      user: patient,
+      message: "Patient profile fetched successfully",
+    });
   } catch (err) {
-    res.status(500).json({ message: "An error occurred while fetching the patient profile", error: err.message });
+    console.error("Error fetching patient:", err);
+
+    res.status(500).json({
+      message: "Server error while fetching patient profile",
+      error: err.message,
+    });
   }
 });
 

@@ -3,6 +3,7 @@ import express from "express";
 import { body, validationResult } from "express-validator";
 
 import { getDispenseReq, addStockAndExpiry, changeMonthlyStock, changeStatus, createMedicine, deleteMedicine, getAllMedicine, getLowStockMeds, getSingleMedicine, postSingleMedicine, searchMedicine, updateMedicine } from "../controllers/medicineController.js";
+import DispenseRecord from "../models/dispenseRecord.js";
 
 
 const router = express.Router();

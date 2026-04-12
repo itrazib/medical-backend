@@ -2,18 +2,11 @@
 import express from "express";
 import mongoose from "mongoose";
 import multer from "multer";
-// import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-// import { GetObjectCommand } from "@aws-sdk/client-s3";
-
-// import MedicalDBAdmin from "../models/admin.js";
-// import UniversityMember from "../models/universityMember.js";
 import MedicalUser from "../models/medicalUser.js";
 import DutyRosterDoctor from "../models/dutyRosterDoctor.js";
 import DutyRoster from "../models/dutyRoster.js";
 import TelemedicineDuty from "../models/telemedicineDuty.js";
 import { AmbulanceAssignment, Driver } from "../models/driver.js";
-// import s3Client from "../config/awsConfig.js";
-// import { generateFileName } from "../helper/utils.js";
 
 const router = express.Router();
 const storage = multer.memoryStorage();
@@ -70,7 +63,7 @@ router.post("/duty-roster-doctor/delete/:id", isMedicalAdmin, async (req, res) =
 });
 
 // ------------------------ Staff Duty Roster ------------------------
-router.get("/duty-roster", isMedicalAdmin, async (req, res) => {
+router.get("/duty-roster",  async (req, res) => {
   try {
     let { department } = req.query;
     if (!department) return res.status(400).json({ error: "Department is required" });
