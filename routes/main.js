@@ -12,6 +12,7 @@ import patientRoutes from "./patientRoutes.js";
 import medicalStaffRoutes from "./medicalStaffRoutes.js";
 import bookingRoutes from "./bookingRoutes.js";
 import commonRoutes from "./commonRoutes.js";
+import aiRoutes from "./aiRoutes.js";
 
 router.use("/admin/medical", medicalAdminRoutes);
 router.use("/admin/university", universityAdminRoutes);
@@ -21,6 +22,7 @@ router.use("/medical-staff", medicalStaffRoutes);
 router.use("/auth", authenticationRoutes);
 router.use("/booking", bookingRoutes);
 router.use("/api", commonRoutes);
+router.use("/api/ai", aiRoutes);
 
 router.use((err, req, res, next) => {
   console.error(err.stack);

@@ -1,10 +1,8 @@
-// server.js
 import dotenv from "dotenv";
 dotenv.config();
 
 import express from "express";
 import cors from "cors";
-import mongoose from "mongoose";
 import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
 import session from "express-session";
@@ -15,37 +13,39 @@ import helmet from "helmet";
 
 import connectDB from "./config/db.js";
 import mainRoutes from "./routes/main.js";
+import Symptom from "./models/symptom.js";
+import OpenAI from "openai";
 
 const MongoDBStore = connectMongoDBSession(session);
 
 const app = express();
 const server = http.createServer(app);
+const PORT = process.env.PORT || 2000;
 
+/* ---------------- SOCKET ---------------- */
 const io = new Server(server, {
   cors: {
-    origin: "*", // socket.io cors
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    credentials: true,
   },
 });
 
-const PORT = process.env.PORT || 2000;
-
-// --- MongoDB session store ---
+/* ---------------- SESSION STORE ---------------- */
 const store = new MongoDBStore({
   uri: process.env.MONGODB_URI,
   collection: "sessions",
 });
 
-store.on("error", function (error) {
+store.on("error", (error) => {
   console.error("SESSION STORE ERROR:", error);
 });
 
-// --- Trust proxy if behind reverse proxy ---
+/* ---------------- TRUST PROXY ---------------- */
 app.set("trust proxy", 1);
 
-// --- CORS with credentials ---
+/* ---------------- CORS ---------------- */
 const allowedOrigins = [
   process.env.FRONTEND_URL || "http://localhost:5173",
-  process.env.BACKEND_URL || `http://localhost:${PORT}`,
 ];
 
 app.use(
@@ -57,11 +57,11 @@ app.use(
         callback(new Error("Not allowed by CORS"));
       }
     },
-    credentials: true, // important for cookies
+    credentials: true,
   })
 );
 
-// --- Middleware ---
+/* ---------------- MIDDLEWARE ---------------- */
 app.use(express.json());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -73,10 +73,10 @@ app.use(
   session({
     secret: process.env.SESSION_SECRET || "secret",
     resave: false,
-    saveUninitialized: false, // only save when session is modified
+    saveUninitialized: false,
     store: store,
     cookie: {
-      maxAge: 1000 * 60 * 60 * 24, // 1 day
+      maxAge: 1000 * 60 * 60 * 24,
       httpOnly: true,
       sameSite: isProduction ? "none" : "lax",
       secure: isProduction,
@@ -86,20 +86,118 @@ app.use(
 
 app.use(helmet());
 
-// --- Optional Mongo sanitize ---
-// import mongoSanitize from "express-mongo-sanitize";
-// app.use(mongoSanitize());
-
-// --- Routes ---
-app.use("/", mainRoutes);
-
-// --- Socket.io attach ---
-app.set("io", io);
-
-// --- Connect Database ---
+/* ---------------- DB ---------------- */
 connectDB();
 
-// --- Start server ---
+/* ---------------- ROUTES ---------------- */
+app.use("/", mainRoutes);
+
+/* ---------------- GROQ AI (FIXED) ---------------- */
+const groq = new OpenAI({
+  apiKey: process.env.GROQ_API_KEY,
+  baseURL: "https://api.groq.com/openai/v1",
+});
+
+/* ---------------- AI FUNCTION ---------------- */
+const analyzeSymptoms = async (message) => {
+  const response = await groq.chat.completions.create({
+    model: "llama-3.3-70b-versatile",
+    messages: [
+      {
+        role: "system",
+        content: `
+You are MBSTU AI Medical Doctor.
+
+Return STRICT JSON ONLY:
+
+{
+  "possibleCauses": [],
+  "explanation": "",
+  "advice": "",
+  "warning": "",
+  "severity": "low | medium | high"
+}
+
+Rules:
+- No final diagnosis
+- Always suggest doctor visit
+- Simple Bangla + English mix
+        `,
+      },
+      {
+        role: "user",
+        content: message,
+      },
+    ],
+  });
+
+  let aiData;
+
+  try {
+    aiData = JSON.parse(response.choices[0].message.content);
+  } catch (e) {
+    aiData = {
+      possibleCauses: [],
+      explanation: response.choices[0].message.content,
+      advice: "Consult doctor",
+      warning: "If severe, go hospital",
+      severity: "medium",
+    };
+  }
+
+  return aiData;
+};
+
+/* ---------------- SOCKET LOGIC ---------------- */
+io.on("connection", (socket) => {
+  console.log("🔌 User connected:", socket.id);
+
+  socket.on("join_room", (room) => {
+    socket.join(room);
+  });
+
+  socket.on("send_message", async (data) => {
+    try {
+      // 1️⃣ user message
+      io.to(data.room).emit("receive_message", {
+        sender: "USER",
+        message: data.message,
+      });
+
+      // 2️⃣ AI response (GROQ)
+      const aiData = await analyzeSymptoms(data.message);
+
+      // 3️⃣ save DB
+      await Symptom.create({
+        userMessage: data.message,
+        aiResponse: aiData.explanation,
+        possibleDiseases: aiData.possibleCauses,
+        severity: aiData.severity,
+      });
+
+      // 4️⃣ send AI reply
+      io.to(data.room).emit("receive_message", {
+        sender: "AI_DOCTOR",
+        message: aiData.explanation,
+        severity: aiData.severity,
+      });
+
+    } catch (err) {
+      console.log(err);
+
+      io.to(data.room).emit("receive_message", {
+        sender: "AI_DOCTOR",
+        message: "AI temporarily unavailable. Try again.",
+      });
+    }
+  });
+
+  socket.on("disconnect", () => {
+    console.log("❌ User disconnected:", socket.id);
+  });
+});
+
+/* ---------------- START ---------------- */
 server.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
