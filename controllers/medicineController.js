@@ -34,7 +34,7 @@ export const getDispenseReq = async (req, res) => {
 
     res.json(records);
   } catch (err) {
-    console.error("Error fetching dispense records:", err);
+    // console.error("Error fetching dispense records:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -52,7 +52,7 @@ export const changeStatus = async (req, res) => {
     await record.save();
     res.json({ record });
   } catch (err) {
-    console.error("Error updating dispense record status:", err);
+    // console.error("Error updating dispense record status:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -91,7 +91,7 @@ export const changeMonthlyStock = async (req, res) => {
     );
     res.json({ message: "Stock updated and record finalized successfully" });
   } catch (err) {
-    console.error("Error finalizing dispense record:", err);
+    // console.error("Error finalizing dispense record:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -121,7 +121,7 @@ export const getAllMedicine = async (req, res) => {
       .limit(Number(limit));
     res.json({ items, totalPages, totalItems });
   } catch (err) {
-    console.error("Error listing medicines:", err);
+    // console.error("Error listing medicines:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -135,7 +135,7 @@ export const getSingleMedicine = async (req, res) => {
     if (!med) return res.status(404).json({ error: "Medicine not found" });
     res.json(med);
   } catch (err) {
-    console.error(err);
+    // console.error(err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -149,7 +149,7 @@ export const postSingleMedicine = async (req, res) => {
     await newMed.save();
     res.status(201).json(newMed);
   } catch (err) {
-    console.error(err);
+    // console.error(err);
     res.status(400).json({ error: err.message });
   }
 };
@@ -165,7 +165,7 @@ export const updateMedicine = async (req, res) => {
     if (!med) return res.status(404).json({ error: "Medicine not found" });
     res.json(med);
   } catch (err) {
-    console.error(err);
+    // console.error(err);
     res.status(400).json({ error: err.message });
   }
 };
@@ -176,7 +176,7 @@ export const deleteMedicine = async (req, res) => {
     if (!med) return res.status(404).json({ error: "Medicine not found" });
     res.json({ message: "Medicine deleted" });
   } catch (err) {
-    console.error(err);
+    // console.error(err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -200,7 +200,7 @@ export const searchMedicine = async (req, res) => {
     ).map((val) => ({ label: val, value: val }));
     res.json(suggestions);
   } catch (err) {
-    console.error("Search error:", err);
+    // console.error("Search error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -218,7 +218,7 @@ export const getLowStockMeds = async (req, res) => {
     );
     res.json(meds);
   } catch (err) {
-    console.error("Error fetching low-stock medicines:", err);
+    // console.error("Error fetching low-stock medicines:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
@@ -240,7 +240,7 @@ export const addStockAndExpiry = async (req, res) => {
     await med.save();
     res.json(med);
   } catch (err) {
-    console.error("Error adding stock to medicine:", err);
+    // console.error("Error adding stock to medicine:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -254,7 +254,7 @@ export const createMedicine = async (req, res) => {
     await med.save();
     res.status(201).json({ message: "Medicine added", medicine: med });
   } catch (err) {
-    console.error(err);
+    // console.error(err);
     if (err.code === 11000) {
       return res.status(400).json({ error: "Medicine already exists" });
     }

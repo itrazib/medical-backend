@@ -7,14 +7,11 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 import MedicalUser from "../models/medicalUser.js";
 import Medicine from "../models/medicine.js";
 import Prescription from "../models/prescription.js";
-// import { getPatientInfo } from "../controllers/prescriptionController.js";
 import { createDiagnosis, getMedicine, getPatientInfo, getPrescription, getTests, listDiagnoses, postPrescription, postTests } from "../controllers/prescriptionController.js";
 import { getSingleMedicine } from "../controllers/medicineController.js";
+import { getAvailableDoctors } from "../controllers/doctorController.js";
 
-// import prescriptionController from "./controllers/prescriptionController.js";
-// import medicineController from "./controllers/medicineController.js";
-// import s3Client from "../config/awsConfig.js";
-// import { calculateAge } from "../helper/utils.js";
+
 
 const router = express.Router();
 
@@ -88,7 +85,7 @@ router.get("/patient-profile/:uniqueId", isDoctor, async (req, res) => {
       message: "Patient profile fetched successfully",
     });
   } catch (err) {
-    console.error("Error fetching patient:", err);
+    // console.error("Error fetching patient:", err);
 
     res.status(500).json({
       message: "Server error while fetching patient profile",
@@ -214,6 +211,8 @@ router.get("/patient-history/:uniqueId", isDoctor, async (req, res) => {
     res.status(500).json({ success: false, message: "Server Error" });
   }
 });
+
+router.get("/available", getAvailableDoctors);
 
 // My prescriptions
 router.get("/my-prescriptions/:id", isDoctor, async (req, res) => {

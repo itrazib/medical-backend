@@ -18,7 +18,7 @@ router.get("/doctors", async (req, res) => {
       return res.status(404).json({ message: "doctors not found", patient: null });
     return res.json({ doctors });
   } catch (err) {
-    console.error(err);
+    // console.error(err);
     return res.status(500).json({ message: "An error occurred while fetching doctors", error: err.message });
   }
 });
@@ -55,7 +55,7 @@ router.get("/available-doctors", async (req, res) => {
     const roster = await DutyRosterDoctor.find({ day: dayOfWeek }).populate("doctor");
     res.json({ availableDoctors: roster });
   } catch (err) {
-    console.error(err);
+    // console.error(err);
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -114,7 +114,7 @@ router.get("/slots", async (req, res) => {
 
     res.json(slots);
   } catch (err) {
-    console.error("Error in /booking/slots:", err);
+    // console.error("Error in /booking/slots:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -149,7 +149,7 @@ router.post("/book/:slotId", async (req, res) => {
 
     res.json({ message: "Booked", slot: returned });
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     res.status(500).json({ message: "Error booking the slot", error: error.message });
   }
 });
@@ -171,7 +171,7 @@ router.post("/cancel/:slotId", async (req, res) => {
       slot: { _id: slot._id, time: slot.time, status: slot.status, bookingStatus: slot.bookingStatus, bookedBy: null, queueNumber: slot.queueNumber },
     });
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     res.status(500).json({ message: "Error canceling the booking", error: error.message });
   }
 });
@@ -192,7 +192,7 @@ router.post("/unavailable/:slotId", async (req, res) => {
       slot: { _id: slot._id, time: slot.time, status: slot.status, bookingStatus: slot.bookingStatus, bookedBy: slot.bookedBy ? { id: slot.bookedBy._id, uniqueId: slot.bookedBy.uniqueId, name: slot.bookedBy.name } : null, queueNumber: slot.queueNumber },
     });
   } catch (err) {
-    console.error(err);
+    // console.error(err);
     res.status(500).json({ message: "Error setting unavailable", error: err.message });
   }
 });
@@ -208,7 +208,7 @@ router.post("/mark-seen/:slotId", async (req, res) => {
     await slot.save();
     res.json({ slot });
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     res.status(500).json({ message: error.message });
   }
 });

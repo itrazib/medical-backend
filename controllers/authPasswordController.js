@@ -20,7 +20,7 @@ export const fetchUserForReset = asyncHandler(async (req, res) => {
   try {
     const uniqueId = req.params.uniqueId.toLowerCase();
     const member = await MedicalUser.findOne({ uniqueId });
-    console.log(member);
+    // console.log(member);
 
     if (!member) {
       return res
@@ -30,7 +30,7 @@ export const fetchUserForReset = asyncHandler(async (req, res) => {
 
     res.json({ success: true, member });
   } catch (err) {
-    console.error("Fetch user error:", err);
+    // console.error("Fetch user error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });

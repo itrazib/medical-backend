@@ -104,7 +104,7 @@ export const sendOtp = asyncHandler(async (req, res) => {
     { upsert: true, new: true }
   );
 
-  console.log("Generated OTP:", otp);
+  // console.log("Generated OTP:", otp);
 
   const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -259,13 +259,13 @@ export const login = asyncHandler(async (req, res) => {
 
   req.session.save((err) => {
     if (err) {
-      console.error("❌ Session save failed:", err);
+      // console.error("❌ Session save failed:", err);
       return res
         .status(500)
         .json({ success: false, message: "Failed to save session" });
     }
 
-    console.log("✅ Session saved for login:", req.session.user);
+    // console.log("✅ Session saved for login:", req.session.user);
     return res.json({ success: true, user: req.session.user });
   });
 });

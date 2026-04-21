@@ -10,7 +10,7 @@ const router = express.Router();
 
 // Middleware: check if user is medical-staff
 const isMedicalStaff = (req, res, next) => {
-  console.log(req.session.user);
+  // console.log(req.session.user);
   if (req.session.user && req.session.user.role === "medical-staff") return next();
   return res.status(403).send("Access denied");
 };
@@ -121,7 +121,7 @@ router.get("/dispensed-report", async (req, res) => {
     ]);
     res.json(report);
   } catch (err) {
-    console.error(err);
+    // console.error(err);
     res.status(500).json({ error: err.message });
   }
 });

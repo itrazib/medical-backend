@@ -99,54 +99,54 @@ const groq = new OpenAI({
 });
 
 /* ---------------- AI FUNCTION ---------------- */
-const analyzeSymptoms = async (message) => {
-  const response = await groq.chat.completions.create({
-    model: "llama-3.3-70b-versatile",
-    messages: [
-      {
-        role: "system",
-        content: `
-You are MBSTU AI Medical Doctor.
+// const analyzeSymptoms = async (message) => {
+//   const response = await groq.chat.completions.create({
+//     model: "llama-3.3-70b-versatile",
+//     messages: [
+//       {
+//         role: "system",
+//         content: `
+// You are MBSTU AI Medical Doctor.
 
-Return STRICT JSON ONLY:
+// Return STRICT JSON ONLY:
 
-{
-  "possibleCauses": [],
-  "explanation": "",
-  "advice": "",
-  "warning": "",
-  "severity": "low | medium | high"
-}
+// {
+//   "possibleCauses": [],
+//   "explanation": "",
+//   "advice": "",
+//   "warning": "",
+//   "severity": "low | medium | high"
+// }
 
-Rules:
-- No final diagnosis
-- Always suggest doctor visit
-- Simple Bangla + English mix
-        `,
-      },
-      {
-        role: "user",
-        content: message,
-      },
-    ],
-  });
+// Rules:
+// - No final diagnosis
+// - Always suggest doctor visit
+// - Simple Bangla + English mix
+//         `,
+//       },
+//       {
+//         role: "user",
+//         content: message,
+//       },
+//     ],
+//   });
 
-  let aiData;
+//   let aiData;
 
-  try {
-    aiData = JSON.parse(response.choices[0].message.content);
-  } catch (e) {
-    aiData = {
-      possibleCauses: [],
-      explanation: response.choices[0].message.content,
-      advice: "Consult doctor",
-      warning: "If severe, go hospital",
-      severity: "medium",
-    };
-  }
+//   try {
+//     aiData = JSON.parse(response.choices[0].message.content);
+//   } catch (e) {
+//     aiData = {
+//       possibleCauses: [],
+//       explanation: response.choices[0].message.content,
+//       advice: "Consult doctor",
+//       warning: "If severe, go hospital",
+//       severity: "medium",
+//     };
+//   }
 
-  return aiData;
-};
+//   return aiData;
+// };
 
 /* ---------------- SOCKET LOGIC ---------------- */
 io.on("connection", (socket) => {

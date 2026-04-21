@@ -9,6 +9,8 @@ import { Diagnosis, Test } from "../models/diagnosis.js";
 import DispenseRecord from "../models/dispenseRecord.js";
 import { calculateAge } from "../helper/prescriptionMethods.js";
 
+
+
 // ==========================
 // Get patient info by uniqueId
 // ==========================
@@ -23,7 +25,7 @@ export const getPatientInfo = async (req, res) => {
     patient.age = calculateAge(patient.dob);
     res.status(200).json({ patient });
   } catch (err) {
-    console.error("Error fetching patient:", err);
+    // console.error("Error fetching patient:", err);
     res.status(500).json({ message: "Server error fetching patient" });
   }
 };
@@ -45,7 +47,7 @@ export const listDiagnoses = async (req, res) => {
 
     res.json(list);
   } catch (err) {
-    console.error("Error listing diagnoses:", err);
+    // console.error("Error listing diagnoses:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -65,7 +67,7 @@ export const createDiagnosis = async (req, res) => {
     await diag.save();
     res.status(201).json(diag);
   } catch (err) {
-    console.error("Error creating diagnosis:", err);
+    // console.error("Error creating diagnosis:", err);
     if (err.code === 11000)
       return res
         .status(409)
@@ -91,7 +93,7 @@ export const getMedicine = async (req, res) => {
 
     res.json(meds);
   } catch (err) {
-    console.error("Error fetching medicines:", err);
+    // console.error("Error fetching medicines:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -110,7 +112,7 @@ export const getTests = async (req, res) => {
 
     res.json(tests);
   } catch (err) {
-    console.error("Error fetching tests:", err);
+    // console.error("Error fetching tests:", err);
     res.status(500).json({ message: "Server error fetching tests" });
   }
 };
@@ -128,7 +130,7 @@ export const postTests = async (req, res) => {
     const saved = await newTest.save();
     res.status(201).json(saved);
   } catch (err) {
-    console.error("Error creating test:", err);
+    // console.error("Error creating test:", err);
     if (err.code === 11000)
       return res.status(400).json({ message: "Test already exists" });
     res.status(500).json({ message: "Server error creating test" });
@@ -219,7 +221,7 @@ export const postPrescription = async (req, res) => {
 
     res.status(201).json({ prescription, dispenseRecord });
   } catch (err) {
-    console.error("Error creating prescription:", err);
+    // console.error("Error creating prescription:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -259,7 +261,7 @@ export const getPrescription = async (req, res) => {
 
     res.json({ prescription, dispenseRecord });
   } catch (err) {
-    console.error("Error fetching prescription:", err);
+    // console.error("Error fetching prescription:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -281,10 +283,11 @@ export const getPrescriptionHistory = async (req, res) => {
 
     res.json({ prescriptions });
   } catch (err) {
-    console.error("Error fetching prescription history:", err);
+    // console.error("Error fetching prescription history:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 export default {
     getPatientInfo,
     listDiagnoses,
@@ -296,3 +299,6 @@ export default {
     getPrescription,
     getPrescriptionHistory,
 };
+
+// const PDFDocument = require("pdfkit");
+

@@ -102,7 +102,7 @@ export const auth_google = [
 // ===== Google Callback =====
 export const auth_google_callback = (req, res, next) => {
   passport.authenticate("google", (err, user) => {
-    console.log("User object:", user);
+    
     if (err) return next(err);
     if (!user) return res.redirect("http://localhost:5173");
 
@@ -121,17 +121,17 @@ export const auth_google_callback = (req, res, next) => {
 
         req.session.save((err) => {
           if (err) {
-            console.error("❌ Session save failed:", err);
+            // console.error("❌ Session save failed:", err);
             return next(err);
           }
 
-          console.log("✅ Session saved with user:", req.session.user);
+          // console.log("✅ Session saved with user:", req.session.user);
 
           const redirectUrl = user.password
             ? process.env.REDIRECT_URL_GOOGLE_REDIRECT
             : process.env.REDIRECT_URL_SET_PASSWORD;
 
-            console.log("Redirecting to:", redirectUrl);
+            // console.log("Redirecting to:", redirectUrl);
 
           return res.redirect(redirectUrl);
         });
@@ -167,11 +167,11 @@ export const setPasswordGoogle = async (req, res) => {
     user.password = hashedPassword;
     await user.save();
 
-    console.log("✅ Password saved");
+    // console.log("✅ Password saved");
 
     return res.status(200).json({ success: true });
   } catch (e) {
-    console.log("Set password error:", e);
+    // console.log("Set password error:", e);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };

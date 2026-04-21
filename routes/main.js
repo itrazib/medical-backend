@@ -14,6 +14,7 @@ import bookingRoutes from "./bookingRoutes.js";
 import commonRoutes from "./commonRoutes.js";
 import aiRoutes from "./aiRoutes.js";
 
+
 router.use("/admin/medical", medicalAdminRoutes);
 router.use("/admin/university", universityAdminRoutes);
 router.use("/doctor", doctorRoutes);
@@ -25,7 +26,7 @@ router.use("/api", commonRoutes);
 router.use("/api/ai", aiRoutes);
 
 router.use((err, req, res, next) => {
-  console.error(err.stack);
+  // console.error(err.stack);
   res.status(err.status || 500).json({
     success: false,
     message: err.message || "Internal Server Error",
