@@ -96,7 +96,7 @@ app.use("/", mainRoutes);
 
 
 
-// /* ---------------- START ---------------- */
-// server.listen(PORT, () => {
-//   console.log(`🚀 Server running on port ${PORT}`);
-// });
+/* ---------------- START ---------------- */
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
