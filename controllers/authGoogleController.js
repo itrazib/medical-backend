@@ -104,7 +104,7 @@ export const auth_google_callback = (req, res, next) => {
   passport.authenticate("google", (err, user) => {
     
     if (err) return next(err);
-    if (!user) return res.redirect("http://localhost:5173");
+    if (!user) return res.redirect("https://mbstu-medical-service.netlify.app");
 
     req.session.regenerate((err) => {
       if (err) return next(err);
@@ -147,7 +147,7 @@ export const logout_get = (req, res) => {
 
     res.clearCookie("connect.sid");
     res.status(200).send("Logged out successfully");
-    res.redirect("http://localhost:5173");
+    res.redirect("https://mbstu-medical-service.netlify.app");
   });
 };
 
