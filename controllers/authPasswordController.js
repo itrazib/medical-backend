@@ -18,9 +18,11 @@ export const asyncHandler = (fn) => (req, res, next) =>
 // ==========================
 export const fetchUserForReset = asyncHandler(async (req, res) => {
   try {
-    const uniqueId = req.params.uniqueId.toLowerCase();
-    const member = await MedicalUser.findOne({ uniqueId });
-    // console.log(member);
+    const uniqueId = req.params.uniqueId;
+
+    const member = await MedicalUser.findOne({
+      uniqueId: new RegExp(`^${uniqueId}$`, "i"),
+    });
 
     if (!member) {
       return res
@@ -30,7 +32,7 @@ export const fetchUserForReset = asyncHandler(async (req, res) => {
 
     res.json({ success: true, member });
   } catch (err) {
-    // console.error("Fetch user error:", err);
+    console.log(err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
