@@ -140,15 +140,31 @@ export const auth_google_callback = (req, res, next) => {
   })(req, res, next);
 };
 
-// ===== Logout =====
-export const logout_get = (req, res) => {
-  req.logout((err) => {
-    if (err) return res.status(500).send("Logout failed");
+export const logout = (req, res) => {
+  try {
+    req.logout(function (err) {
+      if (err) {
+        return res.status(500).json({ message: "Logout failed" });
+      }
 
-    res.clearCookie("connect.sid");
-    res.status(200).send("Logged out successfully");
-    res.redirect("https://mbstu-medical-service.netlify.app");
-  });
+      // destroy session
+      req.session.destroy(() => {
+        // clear cookie
+        res.clearCookie("connect.sid", {
+          path: "/",
+          httpOnly: true,
+          secure: true,       // HTTPS হলে (Render uses HTTPS)
+          sameSite: "none",   // Netlify → Render cross-origin
+        });
+
+        return res.status(200).json({
+          message: "Logged out successfully",
+        });
+      });
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Server error" });
+  }
 };
 
 // ===== Set Password for Google User =====

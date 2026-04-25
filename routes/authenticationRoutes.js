@@ -14,7 +14,7 @@ import {
     auth_google,
     auth_google_callback,
     setPasswordGoogle,
-    logout_get,
+    logout,
 } from "../controllers/authGoogleController.js";
 import {
     fetchUserForReset,
@@ -37,7 +37,7 @@ router.post("/login", login);
 router.post("/set-password-google", setPasswordGoogle);
 router.get("/google", auth_google);
 router.get("/google/callback", auth_google_callback);
-router.get("/logout", logout_get);
+router.get("/logout", logout);
 
 // Forgot password flow
 router.post("/forgot-password/send-otp", sendResetOtp);
