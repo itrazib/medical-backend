@@ -5,16 +5,40 @@ import express from "express";
 import passport from "passport";
 import cookieParser from "cookie-parser";
 import bcrypt from "bcrypt";
+import session from "express-session";
 
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import UniversityMember from "../models/universityMember.js";
 import MedicalUser from "../models/medicalUser.js";
 
 const router = express.Router();
-const app = express();
-app.use(cookieParser());
 
-// ===== Passport Google Strategy =====
+// =====================================
+// MIDDLEWARE (ONLY IF NOT IN SERVER.JS)
+// =====================================
+router.use(cookieParser());
+
+// =====================================
+// SESSION (IMPORTANT: ideally server.js এ থাকবে)
+// =====================================
+router.use(
+  session({
+    secret: process.env.SESSION_SECRET || "secret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: true,
+      sameSite: "none",
+    },
+  })
+);
+
+router.use(passport.initialize());
+router.use(passport.session());
+
+// =====================================
+// GOOGLE STRATEGY
+// =====================================
 passport.use(
   new GoogleStrategy(
     {
@@ -27,51 +51,45 @@ passport.use(
       try {
         const email = profile.emails[0].value.toLowerCase();
 
-        // Check in MedicalUser
         let user = await MedicalUser.findOne({
-          emails: { $elemMatch: { $regex: new RegExp(`^${email}$`, "i") } },
+          emails: email,
         });
 
         if (!user) {
-          // Check in UniversityMember
           const universityUser = await UniversityMember.findOne({
-            emails: { $elemMatch: { $regex: new RegExp(`^${email}$`, "i") } },
+            emails: email,
           });
 
-          if (universityUser) {
-            const role = MedicalUser.determineRole(
-              universityUser.userType,
-              universityUser.designation,
-              universityUser.office
-            );
-
-            user = new MedicalUser({
-              uniqueId: universityUser.uniqueId,
-              name: universityUser.name,
-              userType: universityUser.userType,
-              sex: universityUser.sex,
-              department: universityUser.department,
-              office: universityUser.office,
-              designation: universityUser.designation,
-              designation_2: universityUser.designation_2,
-              program: universityUser.program,
-              hall: universityUser.hall,
-              session: universityUser.session,
-              bloodGroup: universityUser.bloodGroup,
-              dob: universityUser.dob,
-              emails: universityUser.emails,
-              phone: universityUser.phone,
-              photo: universityUser.photo,
-              googleId: profile.id,
-              role: role,
-            });
-
-            await user.save();
-          } else {
-            return done(null, false, {
-              message: "User not found in university records",
-            });
+          if (!universityUser) {
+            return done(null, false);
           }
+
+          const role = MedicalUser.determineRole(
+            universityUser.userType,
+            universityUser.designation,
+            universityUser.office
+          );
+
+          user = await MedicalUser.create({
+            uniqueId: universityUser.uniqueId,
+            name: universityUser.name,
+            userType: universityUser.userType,
+            sex: universityUser.sex,
+            department: universityUser.department,
+            office: universityUser.office,
+            designation: universityUser.designation,
+            designation_2: universityUser.designation_2,
+            program: universityUser.program,
+            hall: universityUser.hall,
+            session: universityUser.session,
+            bloodGroup: universityUser.bloodGroup,
+            dob: universityUser.dob,
+            emails: universityUser.emails,
+            phone: universityUser.phone,
+            photo: universityUser.photo,
+            googleId: profile.id,
+            role,
+          });
         }
 
         return done(null, user);
@@ -82,11 +100,25 @@ passport.use(
   )
 );
 
-// ===== Serialize & Deserialize =====
-passport.serializeUser((user, done) => done(null, user));
-passport.deserializeUser((user, done) => done(null, user));
+// =====================================
+// SERIALIZE / DESERIALIZE (FIXED)
+// =====================================
+passport.serializeUser((user, done) => {
+  done(null, user._id);
+});
 
-// ===== Google Auth Route =====
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await MedicalUser.findById(id);
+    done(null, user);
+  } catch (err) {
+    done(err, null);
+  }
+});
+
+// =====================================
+// GOOGLE LOGIN
+// =====================================
 export const auth_google = [
   (req, res, next) => {
     if (req.cookies.role) {
@@ -99,12 +131,17 @@ export const auth_google = [
   }),
 ];
 
-// ===== Google Callback =====
+// =====================================
+// GOOGLE CALLBACK (FIXED)
+// =====================================
 export const auth_google_callback = (req, res, next) => {
   passport.authenticate("google", (err, user) => {
-    
     if (err) return next(err);
-    if (!user) return res.redirect("https://mbstu-medical-service.netlify.app");
+
+    if (!user)
+      return res.redirect(
+        "https://mbstu-medical-service.netlify.app"
+      );
 
     req.session.regenerate((err) => {
       if (err) return next(err);
@@ -120,18 +157,11 @@ export const auth_google_callback = (req, res, next) => {
         };
 
         req.session.save((err) => {
-          if (err) {
-            // console.error("❌ Session save failed:", err);
-            return next(err);
-          }
-
-          // console.log("✅ Session saved with user:", req.session.user);
+          if (err) return next(err);
 
           const redirectUrl = user.password
             ? process.env.REDIRECT_URL_GOOGLE_REDIRECT
             : process.env.REDIRECT_URL_SET_PASSWORD;
-
-            // console.log("Redirecting to:", redirectUrl);
 
           return res.redirect(redirectUrl);
         });
@@ -140,55 +170,69 @@ export const auth_google_callback = (req, res, next) => {
   })(req, res, next);
 };
 
+// =====================================
+// LOGOUT (FIXED SAFE VERSION)
+// =====================================
 export const logout = (req, res) => {
   try {
-    // destroy session if exists
+    if (req.logout) req.logout(() => {});
+
     if (req.session) {
-      req.session.destroy((err) => {
-        if (err) {
-          console.log("Session destroy error:", err);
-        }
+      req.session.destroy(() => {
+        res.clearCookie("connect.sid", {
+          path: "/",
+          httpOnly: true,
+          secure: true,
+          sameSite: "none",
+        });
+
+        return res.status(200).json({
+          message: "Logged out successfully",
+        });
+      });
+    } else {
+      res.clearCookie("connect.sid");
+      return res.status(200).json({
+        message: "Logged out successfully",
       });
     }
-
-    // clear cookie
-    res.clearCookie("connect.sid", {
-      path: "/",
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-    });
-
-    return res.status(200).json({
-      message: "Logged out successfully",
-    });
   } catch (error) {
-    console.log("Logout error:", error);
+    console.log(error);
     return res.status(500).json({ message: "Server error" });
   }
 };
 
-// ===== Set Password for Google User =====
+// =====================================
+// SET PASSWORD (GOOGLE USER)
+// =====================================
 export const setPasswordGoogle = async (req, res) => {
-  const { uniqueId, password } = req.body;
   try {
+    const { uniqueId, password } = req.body;
+
     const user = await MedicalUser.findOne({ uniqueId });
 
     if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     user.password = hashedPassword;
+
     await user.save();
 
-    // console.log("✅ Password saved");
-
-    return res.status(200).json({ success: true });
-  } catch (e) {
-    // console.log("Set password error:", e);
-    return res.status(500).json({ success: false, message: "Server error" });
+    return res.status(200).json({
+      success: true,
+      message: "Password set successfully",
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
+
+export default router;
