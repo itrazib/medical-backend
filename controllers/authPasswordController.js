@@ -196,11 +196,9 @@ export const verifyResetOtp = asyncHandler(async (req, res) => {
 // Reset password
 // ==========================
 export const resetPassword = asyncHandler(async (req, res) => {
-  await check("uniqueId", "Unique ID is required").notEmpty().run(req);
-  await check("password", "Password must be at least 6 characters")
-    .isLength({ min: 6 })
-    .run(req);
-  await check("confirmPassword", "Passwords do not match")
+  await check("uniqueId").notEmpty().run(req);
+  await check("password").isLength({ min: 6 }).run(req);
+  await check("confirmPassword")
     .custom((value, { req }) => value === req.body.password)
     .run(req);
 
@@ -214,7 +212,6 @@ export const resetPassword = asyncHandler(async (req, res) => {
 
   const { uniqueId, password } = req.body;
 
-  // 🔥 case-insensitive user find
   const user = await MedicalUser.findOne({
     uniqueId: new RegExp(`^${uniqueId}$`, "i"),
   });
@@ -226,22 +223,8 @@ export const resetPassword = asyncHandler(async (req, res) => {
     });
   }
 
-  // 🔥 IMPORTANT: check OTP verified (extra safety)
-  const otpRecord = await OtpModel.findOne({
-    uniqueId: user.uniqueId,
-  });
-
-  if (otpRecord) {
-    return res.status(403).json({
-      success: false,
-      message: "OTP not verified",
-    });
-  }
-
-  // 🔐 hash password
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  user.password = hashedPassword;
+  // 🔥 password update
+  user.password = await bcrypt.hash(password, 10);
   await user.save();
 
   return res.json({
