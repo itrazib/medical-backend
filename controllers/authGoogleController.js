@@ -142,27 +142,28 @@ export const auth_google_callback = (req, res, next) => {
 
 export const logout = (req, res) => {
   try {
-    req.logout(function (err) {
-      if (err) {
-        return res.status(500).json({ message: "Logout failed" });
-      }
-
-      // destroy session
-      req.session.destroy(() => {
-        // clear cookie
-        res.clearCookie("connect.sid", {
-          path: "/",
-          httpOnly: true,
-          secure: true,       // HTTPS হলে (Render uses HTTPS)
-          sameSite: "none",   // Netlify → Render cross-origin
-        });
-
-        return res.status(200).json({
-          message: "Logged out successfully",
-        });
+    // destroy session if exists
+    if (req.session) {
+      req.session.destroy((err) => {
+        if (err) {
+          console.log("Session destroy error:", err);
+        }
       });
+    }
+
+    // clear cookie
+    res.clearCookie("connect.sid", {
+      path: "/",
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+    });
+
+    return res.status(200).json({
+      message: "Logged out successfully",
     });
   } catch (error) {
+    console.log("Logout error:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };

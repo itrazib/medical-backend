@@ -13,8 +13,9 @@ import {
 import {
     auth_google,
     auth_google_callback,
-    setPasswordGoogle,
     logout,
+    setPasswordGoogle,
+    
 } from "../controllers/authGoogleController.js";
 import {
     fetchUserForReset,
