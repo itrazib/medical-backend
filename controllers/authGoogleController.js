@@ -1,11 +1,6 @@
-import dotenv from "dotenv";
-dotenv.config();
-
 import express from "express";
 import passport from "passport";
-import cookieParser from "cookie-parser";
 import bcrypt from "bcrypt";
-import session from "express-session";
 
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import UniversityMember from "../models/universityMember.js";
@@ -13,32 +8,9 @@ import MedicalUser from "../models/medicalUser.js";
 
 const router = express.Router();
 
-// =====================================
-// MIDDLEWARE (ONLY IF NOT IN SERVER.JS)
-// =====================================
-router.use(cookieParser());
-
-// =====================================
-// SESSION (IMPORTANT: ideally server.js এ থাকবে)
-// =====================================
-router.use(
-  session({
-    secret: process.env.SESSION_SECRET || "secret",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: true,
-      sameSite: "none",
-    },
-  })
-);
-
-router.use(passport.initialize());
-router.use(passport.session());
-
-// =====================================
+// ======================
 // GOOGLE STRATEGY
-// =====================================
+// ======================
 passport.use(
   new GoogleStrategy(
     {
@@ -52,17 +24,15 @@ passport.use(
         const email = profile.emails[0].value.toLowerCase();
 
         let user = await MedicalUser.findOne({
-          emails: email,
+          emails: { $elemMatch: { $regex: new RegExp(`^${email}$`, "i") } },
         });
 
         if (!user) {
           const universityUser = await UniversityMember.findOne({
-            emails: email,
+            emails: { $elemMatch: { $regex: new RegExp(`^${email}$`, "i") } },
           });
 
-          if (!universityUser) {
-            return done(null, false);
-          }
+          if (!universityUser) return done(null, false);
 
           const role = MedicalUser.determineRole(
             universityUser.userType,
@@ -100,11 +70,11 @@ passport.use(
   )
 );
 
-// =====================================
-// SERIALIZE / DESERIALIZE (FIXED)
-// =====================================
+// ======================
+// SERIALIZE FIXED
+// ======================
 passport.serializeUser((user, done) => {
-  done(null, user._id);
+  done(null, user._id.toString());
 });
 
 passport.deserializeUser(async (id, done) => {
@@ -116,95 +86,68 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
-// =====================================
+// ======================
 // GOOGLE LOGIN
-// =====================================
-export const auth_google = [
-  (req, res, next) => {
-    if (req.cookies.role) {
-      req.session.role = req.cookies.role;
-    }
-    next();
-  },
-  passport.authenticate("google", {
-    scope: ["profile", "email"],
-  }),
-];
+// ======================
+export const auth_google = passport.authenticate("google", {
+  scope: ["profile", "email"],
+});
 
-// =====================================
-// GOOGLE CALLBACK (FIXED)
-// =====================================
+// ======================
+// GOOGLE CALLBACK
+// ======================
 export const auth_google_callback = (req, res, next) => {
   passport.authenticate("google", (err, user) => {
     if (err) return next(err);
 
-    if (!user)
-      return res.redirect(
-        "https://mbstu-medical-service.netlify.app"
-      );
+    if (!user) {
+      return res.redirect(process.env.FRONTEND_URL);
+    }
 
-    req.session.regenerate((err) => {
+    req.logIn(user, (err) => {
       if (err) return next(err);
 
-      req.logIn(user, (err) => {
-        if (err) return next(err);
+      req.session.user = {
+        id: user._id,
+        uniqueId: user.uniqueId,
+        name: user.name,
+        role: user.role,
+      };
 
-        req.session.user = {
-          id: user._id,
-          uniqueId: user.uniqueId,
-          name: user.name,
-          role: user.role,
-        };
+      req.session.save(() => {
+        const redirectUrl = user.password
+          ? process.env.REDIRECT_URL_GOOGLE_REDIRECT
+          : process.env.REDIRECT_URL_SET_PASSWORD;
 
-        req.session.save((err) => {
-          if (err) return next(err);
-
-          const redirectUrl = user.password
-            ? process.env.REDIRECT_URL_GOOGLE_REDIRECT
-            : process.env.REDIRECT_URL_SET_PASSWORD;
-
-          return res.redirect(redirectUrl);
-        });
+        return res.redirect(redirectUrl);
       });
     });
   })(req, res, next);
 };
 
-// =====================================
-// LOGOUT (FIXED SAFE VERSION)
-// =====================================
+// ======================
+// LOGOUT (SAFE)
+// ======================
 export const logout = (req, res) => {
-  try {
-    if (req.logout) req.logout(() => {});
+  req.logout?.(() => {});
 
-    if (req.session) {
-      req.session.destroy(() => {
-        res.clearCookie("connect.sid", {
-          path: "/",
-          httpOnly: true,
-          secure: true,
-          sameSite: "none",
-        });
+  req.session?.destroy(() => {
+    res.clearCookie("connect.sid", {
+      path: "/",
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+    });
 
-        return res.status(200).json({
-          message: "Logged out successfully",
-        });
-      });
-    } else {
-      res.clearCookie("connect.sid");
-      return res.status(200).json({
-        message: "Logged out successfully",
-      });
-    }
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Server error" });
-  }
+    return res.status(200).json({
+      message: "Logged out successfully",
+    });
+  });
 };
 
-// =====================================
-// SET PASSWORD (GOOGLE USER)
-// =====================================
+// ======================
+// SET PASSWORD
+// ======================
 export const setPasswordGoogle = async (req, res) => {
   try {
     const { uniqueId, password } = req.body;
@@ -218,12 +161,10 @@ export const setPasswordGoogle = async (req, res) => {
       });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    user.password = hashedPassword;
-
+    user.password = await bcrypt.hash(password, 10);
     await user.save();
 
-    return res.status(200).json({
+    return res.json({
       success: true,
       message: "Password set successfully",
     });
